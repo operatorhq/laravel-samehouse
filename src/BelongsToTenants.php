@@ -25,22 +25,18 @@ trait BelongsToTenants
         // Grab our singleton from the container
         static::$landlord = app(TenantManager::class);
 
+        if (method_exists(static::class, 'whenBooted')) {
+            static::whenBooted(function () {
+                static::$landlord->applyTenantScopes(new static());
+            });
+        } else {
+            static::$landlord->applyTenantScopes(new static());
+        }
+
         // Add tenantColumns automatically when creating models
         static::creating(function (Model $model) {
             static::$landlord->newModel($model);
         });
-    }
-
-    /**
-     * Apply tenant scopes after boot completes.
-     *
-     * Laravel 13 prevents calling `new static()` during boot to avoid
-     * nested boot cycles. Moving scope application to `booted` resolves
-     * this while maintaining identical behavior.
-     */
-    public static function bootedBelongsToTenants()
-    {
-        static::$landlord->applyTenantScopes(new static());
     }
 
     /**
